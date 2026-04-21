@@ -1,0 +1,89 @@
+Name: NANYONDO SHERINAH SPELLAH
+Date: 22/04/2026
+
+TASK 1
+
+CREATE TABLE IF NOT EXISTS products (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+name TEXT NOT NULL,
+description TEXT,
+price REAL NOT NULL
+)
+`);
+const insert = db.prepare('INSERT INTO products (name, description, price) VALUES (?, ?, ?)');
+const insertAll = db.transaction((rows) => { for (const r of rows) insert.run(...r); });
+insertAll([
+['Cement (bag)', 'Portland cement 50kg bag', 35000],
+['Iron Sheet 3m','Gauge 30 roofing sheet 3m long', 110000],
+['Paint 5L', 'Exterior wall paint white 5L', 60000],
+['Nails 1kg', 'Common wire nails 1kg pack', 12000],
+['Timber 2x4', 'Pine timber plank 2x4 per metre', 25000],
+]);
+
+TASK 2
+
+console.log("Query A: All products");
+console.log(" Query B: Name and Price only");
+console.log("Query C: Product with ID 3");
+console.log("Query D: Names containing 'sheet'");
+console.log(" Query E: Sorted by price (Highest first)");
+console.log(" Query F: Two most expensive products ");
+console.log("Query G: Update Cement Price and Confirm");
+
+TASK 3
+Attack 1: Dump all products
+
+Query: SELECT * FROM products WHERE name LIKE '%' OR 1=1--%'
+
+Result: [Returns every row in the products table]
+
+Why it worked: The OR 1=1 is a mathematical truth that makes the entire WHERE clause true for every row, and -- ignores the rest of the intended query.
+
+Attack 2: Login bypass
+
+Query: SELECT * FROM users WHERE username='admin'--' AND password='anything'
+
+Result: (1, 'admin', 'admin123', 'admin')
+
+Why it worked: The -- comments out the password check entirely, telling the database to only care if the username is 'admin'.
+
+Attack 3: Always true login
+
+Query: SELECT * FROM users WHERE username='' OR '1'='1' AND password='' OR '1'='1'
+
+Result: (1, 'admin', 'admin123', 'admin')
+
+Why it worked: By injecting OR '1'='1', the authentication logic is bypassed because '1' always equals '1', returning the first user in the table.
+
+TASK 4
+
+Explanation:
+Using the ? placeholder prevents injection because it treats user input strictly as data, not as executable code. In an f-string, the database receives a single long string where user input can change the logic of the command. In a parameterized query, the SQL command is sent to the database engine first, and the parameters are sent separately; the engine knows exactly what the query structure is and will not execute any SQL commands hidden inside the variables.
+
+Results of Secure Tests:
+
+Test 1: []
+
+Test 2: []
+
+Test 3: None
+
+Test 4: None
+
+TASK 5
+
+Test Cases:
+
+search_product_safe('cement'): ACCEPTED - Returns product details.
+
+search_product_safe(''): REJECTED - Error: Name too short.
+
+search_product_safe('<script>'): REJECTED - Error: Invalid characters detected.
+
+login_safe('admin', 'admin123'): ACCEPTED - Returns user row.
+
+login_safe('admin', 'ab'): REJECTED - Error: Password too short.
+
+login_safe('ad min', 'pass123'): REJECTED - Error: Username cannot contain spaces.
+
+
